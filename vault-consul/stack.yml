@@ -1,0 +1,34 @@
+version: '3.3'
+
+services:
+
+  consul-server:
+    image: consul:latest
+    networks:
+      - ci
+    command: "agent -dev -client 0.0.0.0"
+    ports:
+      - "8400:8400"
+      - "8500:8500"
+      - "8600:8600"
+
+  vault:
+    networks:
+      - ci
+    image: "vault:latest"
+    environment:
+      VAULT_ADDR: http://vault:8200
+    ports:
+      - "8200:8200"
+    configs:
+      - source: vault_config
+        target: /vault/config/with-consul.hcl
+    command: vault server -config /vault/config/with-consul.hcl
+
+configs:
+  vault_config:
+    file: ./config/with-consul.hcl
+
+networks:
+  ci:
+    external: true
