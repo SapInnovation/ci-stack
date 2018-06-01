@@ -1,0 +1,62 @@
+version: "3.6"
+
+services:
+  concourse-db:
+    networks:
+      - ci
+    image: postgres
+    environment:
+    - POSTGRES_DB=concourse
+    - POSTGRES_USER=concourse_user
+    - PGDATA=/database
+    - POSTGRES_PASSWORD=concourse
+
+  concourse-web:
+    networks:
+      - ci
+    image: concourse/concourse
+    command: web
+    ports:
+      - "8081:8080"
+    secrets:
+      - source: concourse_web_signing_key
+        target: /concourse-keys/session_signing_key
+      - source: concourse_web_signing_key_pub
+        target: /concourse-keys/session_signing_key.pub
+      - source: concourse_web_tsa_key
+        target: /concourse-keys/tsa_host_key
+      - source: concourse_web_tsa_key_pub
+        target: /concourse-keys/tsa_host_key.pub
+      - source: concourse_worker_key_pub
+        target: /concourse-keys/authorized_worker_keys
+    environment:
+    - CONCOURSE_POSTGRES_HOST=concourse-db
+    - CONCOURSE_POSTGRES_USER=concourse_user
+    - CONCOURSE_POSTGRES_DATABASE=concourse
+    - CONCOURSE_EXTERNAL_URL=http://localhost:8081
+    - CONCOURSE_GITHUB_AUTH_ORGANIZATION=<fill-before-deploy>
+    - CONCOURSE_VAULT_URL=http://vault:8200
+    - CONCOURSE_VAULT_PATH_PREFIX=concourse
+    - CONCOURSE_VAULT_INSECURE_SKIP_VERIFY="true"
+    - CONCOURSE_POSTGRES_PASSWORD=concourse
+    - CONCOURSE_VAULT_CLIENT_TOKEN=<fill-before-deploy>
+    - CONCOURSE_GITHUB_AUTH_CLIENT_ID=<fill-before-deploy>
+    - CONCOURSE_GITHUB_AUTH_CLIENT_SECRET=<fill-before-deploy>
+
+secrets:
+  concourse_web_signing_key:
+    file: ./keys/web/session_signing_key
+  concourse_web_signing_key_pub:
+    file: ./keys/web/session_signing_key.pub
+  concourse_web_tsa_key:
+    file: ./keys/web/tsa_host_key
+  concourse_web_tsa_key_pub:
+    file: ./keys/web/tsa_host_key.pub
+  concourse_worker_key:
+    file: ./keys/worker/worker_key
+  concourse_worker_key_pub:
+    file: ./keys/worker/worker_key.pub
+
+networks:
+  ci:
+    external: true
